@@ -187,12 +187,11 @@ class Grid:
         obj = self.biomes.find_by_id(id)
         for dx in range(-size, size + 1):
             if 0 <= x + dx < self.width:
-                self.grid[y][x + dx] = obj
+                self.set_cell(x + dx, y, obj)
         for dy in range(-size, size + 1):
             if 0 <= y + dy < self.height:
-                self.grid[y + dy][x] = obj
+                self.set_cell(x, y + dy, obj)
 
     def needs_work(self) -> bool:
         return any(any(cell is None for cell in row) for row in self.grid)
-    
     
