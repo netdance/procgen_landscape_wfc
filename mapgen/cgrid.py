@@ -18,7 +18,7 @@ class Grid:
     smooth_point: Tuple[int, int] = (0, 0)
     
     connector_name: str = None
-    USE_RANDOM = False
+    USE_RANDOM = True
 
     def __post_init__(self):
         self.grid = [[None for _ in range(self.width)] for _ in range(self.height)]
