@@ -9,7 +9,7 @@ import pygame
 
 from mapgen.biomes import Biomes
 from mapgen.lgrid import Grid
-from mapgen.grid_object import GridObject
+from mapgen.cell import Cell
 from mapgen.exceptions import ImpossibleWorld
 from UI.pygame_display import PygameDisplay
 
@@ -27,52 +27,51 @@ logger = logging.getLogger(__name__)
 biomes: Biomes = Biomes()
 lbiomes: Biomes = Biomes()
 
-'''
 # Define some grid objects with single character IDs and neighbor weights
-lbiomes.add_biome(GridObject(id='W', color=(0, 0, 153),
+lbiomes.add_biome(Cell(id='W', color=(0, 0, 153),
                   neighbor_weights={'W': 1.5, "w": 0.9, 'r': 0.01}))
-lbiomes.add_biome(GridObject(id='w', color=(0, 0, 204),
+lbiomes.add_biome(Cell(id='w', color=(0, 0, 204),
                   neighbor_weights={'w': 1.5, 'W': 0.7, 'g': 0.7, 's': 0.6, 'r': 0.01}))
-lbiomes.add_biome(GridObject(id='g', color=(128, 255, 0),
+lbiomes.add_biome(Cell(id='g', color=(128, 255, 0),
                   neighbor_weights={'g': 2, 'w': 0.25, 'f': 0.38, 's': 0.35, 'h': 0.5, 'r': 0.01}))
-lbiomes.add_biome(GridObject(id='f', color=(0, 204, 0),
+lbiomes.add_biome(Cell(id='f', color=(0, 204, 0),
                   neighbor_weights={'f': 2, 'g': 0.4, 'F': 0.66, 'r': 0.01}))
-lbiomes.add_biome(GridObject(id='F', color=(0, 102, 51),
+lbiomes.add_biome(Cell(id='F', color=(0, 102, 51),
                   neighbor_weights={'F': 2, 'f': 0.85, 'r': 0.01}))
-lbiomes.add_biome(GridObject(id='h', color=(102, 51, 0),
+lbiomes.add_biome(Cell(id='h', color=(102, 51, 0),
                   neighbor_weights={'h': 2, 'g': 0.66, 'm': 0.66, 'r': 0.01}))
-lbiomes.add_biome(GridObject(id='m', color=(128, 128, 128),
+lbiomes.add_biome(Cell(id='m', color=(128, 128, 128),
                   neighbor_weights={'m': 2, 'M': 0.75, 'h': 0.8, 'r': 0.01}))
-lbiomes.add_biome(GridObject(id='M', color=(192, 192, 192),
+lbiomes.add_biome(Cell(id='M', color=(192, 192, 192),
                   neighbor_weights={'M': 2, 'm': 1.0, 'r': 0.01}))
-lbiomes.add_biome(GridObject(id='s', color=(153, 153, 0),
+lbiomes.add_biome(Cell(id='s', color=(153, 153, 0),
                   neighbor_weights={'s': 2, 'w': 0.6, 'g': 0.8, 'r': 0.01}))
-lbiomes.add_biome(GridObject(id='r', color=(210, 180, 140),
+lbiomes.add_biome(Cell(id='r', color=(210, 180, 140),
                   neighbor_weights={'r': 0.001, 'W': 0.1, 'w': 0.1, 'g': 0.1, 
                                     'f': 0.1, 'F': 0.1, 'h': 0.1, 'm': 0.1, 'M': 0.1, 
                                     's': 0.1, 'r': 0.01 }))
-'''
+
 
 # Define some grid objects with single character IDs and neighbor weights
-biomes.add_biome(GridObject(id=0, name='W', color=(0, 0, 153),
+biomes.add_biome(Cell(id='W', color=(0, 0, 153),
                   neighbor_weights={'W': 1.3, "w": 0.9, 'r': 0.01}))
-biomes.add_biome(GridObject(id=1, name='w', color=(0, 0, 204),
+biomes.add_biome(Cell(id='w', color=(0, 0, 204),
                   neighbor_weights={'w': 1.3, 'W': 0.5, 'g': 0.7, 's': 0.6, 'r': 0.01}))
-biomes.add_biome(GridObject(id=2, name='g', color=(128, 255, 0),
+biomes.add_biome(Cell(id='g', color=(128, 255, 0),
                   neighbor_weights={'g': 2.2, 'w': 0.28, 'f': 0.26, 's': 0.25, 'h': 0.42, 'r': 0.01}))
-biomes.add_biome(GridObject(id=3, name='f', color=(0, 204, 0),
+biomes.add_biome(Cell(id='f', color=(0, 204, 0),
                   neighbor_weights={'f': 2.25, 'g': 0.34, 'F': 0.6, 'r': 0.01}))
-biomes.add_biome(GridObject(id=4, name='F', color=(0, 102, 51),
+biomes.add_biome(Cell(id='F', color=(0, 102, 51),
                   neighbor_weights={'F': 1.65, 'f': 0.9, 'r': 0.01}))
-biomes.add_biome(GridObject(id=5, name='h', color=(102, 51, 0),
+biomes.add_biome(Cell(id='h', color=(102, 51, 0),
                   neighbor_weights={'h': 2, 'g': 0.63, 'm': 0.66, 'r': 0.01}))
-biomes.add_biome(GridObject(id=6, name='m', color=(128, 128, 128),
+biomes.add_biome(Cell(id='m', color=(128, 128, 128),
                   neighbor_weights={'m': 2, 'M': 0.75, 'h': 0.8, 'r': 0.01}))
-biomes.add_biome(GridObject(id=7, name='M', color=(192, 192, 192),
+biomes.add_biome(Cell(id='M', color=(192, 192, 192),
                   neighbor_weights={'M': 1.5, 'm': 1.0, 'r': 0.01}))
-biomes.add_biome(GridObject(id=8, name='s', color=(153, 153, 0),
+biomes.add_biome(Cell(id='s', color=(153, 153, 0),
                   neighbor_weights={'s': 2, 'w': 0.6, 'g': 0.8, 'r': 0.01}))
-biomes.add_biome(GridObject(id=9, name='r', color=(210, 180, 140),
+biomes.add_biome(Cell(id='r', color=(210, 180, 140),
                   neighbor_weights={'r': 0.001, 'W': 0.1, 'w': 0.1, 'g': 0.1, 
                                     'f': 0.1, 'F': 0.1, 'h': 0.1, 'm': 0.1, 'M': 0.1, 
                                     's': 0.1, 'r': 0.01 }))
@@ -95,8 +94,7 @@ CONNECTOR_ID = 'r'
 def run_wfc_and_display(grid: Grid) -> bool:
     try:
         count = 0
-        #while np.any(grid.grid == None):
-        while any(any(cell is None for cell in row) for row in grid.grid):
+        while not grid.all_set():
             grid.collapse_least_entropy_cell()
             count += 1
             if count // 50 == count / 50:
@@ -124,10 +122,10 @@ def run_smooth_and_display(grid: Grid) -> None:
     display_grid(grid)
     return
 
-def display_grid(grid):
+def display_grid(grid: Grid):
     for y in range(grid.height):
         for x in range(grid.width):
-            cell: GridObject = grid.grid[y][x]
+            cell: Cell = grid.grid[y][x]
             color = cell.color if cell else BLACK
             pygame.draw.rect(screen, color, (x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE))
     pygame.display.flip()
