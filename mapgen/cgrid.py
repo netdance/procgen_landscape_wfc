@@ -1,15 +1,12 @@
-import logging
 import random
-from collections import Counter
+from collections import Counter, deque
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 
 from .biomes import Biomes
-from .exceptions import ImpossibleWorld
 from .cell import Cell
+from .exceptions import ImpossibleWorld
 
-# Creating a logger
-logger: logging.Logger = logging.getLogger(__name__)
 
 @dataclass
 class Grid:
@@ -19,7 +16,7 @@ class Grid:
     grid: List[List[Optional[Cell]]] = field(init=False)
     entropy_grid: List[List[int]] = field(init=False)
     smooth_point: Tuple[int, int] = (0, 0)
-
+    
     connector_name: str = None
     USE_RANDOM = True
 
@@ -86,17 +83,24 @@ class Grid:
             
     def set_cell(self, x: int, y: int, cell: Cell):
         self.grid[y][x] = cell
-        self.update_neighbors_entropy(x, y, cell)
+        self.propagate_entropy(x, y)
 
-    def update_neighbors_entropy(self, x: int, y: int, chosen_object: Cell):
-        for dx in [-1, 0, 1]:
-            for dy in [-1, 0, 1]:
-                if dx == 0 and dy == 0:
-                    continue
-                nx, ny = x + dx, y + dy
-                if 0 <= nx < self.width and 0 <= ny < self.height and self.grid[ny][nx] is None:
-                    valid_objects = [obj for obj in self.biomes.biomes if self.is_valid_object(nx, ny, obj)]
-                    self.entropy_grid[ny][nx] = len(valid_objects)
+    def propagate_entropy(self, x: int, y: int):
+        queue = deque([(x, y)])
+
+        while queue:
+            cx, cy = queue.popleft()
+            for dx in [-1, 0, 1]:
+                for dy in [-1, 0, 1]:
+                    if dx == 0 and dy == 0:
+                        continue
+                    nx, ny = cx + dx, cy + dy
+                    if 0 <= nx < self.width and 0 <= ny < self.height and self.grid[ny][nx] is None:
+                        valid_objects = [obj for obj in self.biomes.biomes if self.is_valid_object(nx, ny, obj)]
+                        new_entropy = len(valid_objects)
+                        if new_entropy < self.entropy_grid[ny][nx]:
+                            self.entropy_grid[ny][nx] = new_entropy
+                            queue.append((nx, ny))
 
     def is_valid_object(self, x: int, y: int, obj: Cell) -> bool:
         neighbors = self.get_neighbors(x, y)
@@ -124,6 +128,7 @@ class Grid:
             if neighbor:
                 weight *= neighbor.neighbor_weights.get(obj.id, 0)
         return weight
+    
 
     def smooth(self) -> bool:
         remove_id = None
@@ -195,4 +200,4 @@ class Grid:
     def needs_work(self) -> bool:
         return any(any(cell is None for cell in row) for row in self.grid)
     
-    
+        

@@ -22,39 +22,51 @@ class Grid:
     entropy_grid: np.ndarray = field(init=False)
     smooth_point: Tuple[int, int] = (0, 0)
 
+    # Keey the ability to generate based on either random or first index methods - they produce different looking results
+    USE_RANDOM = False
     connector_id: str = None
+    LARGE_INT = 10**9  # Use a large integer to represent 'infinity'
 
     def __post_init__(self):
         self.grid = np.full((self.height, self.width), None, dtype=object)
         self.entropy_grid = np.full((self.height, self.width), self.calculate_initial_entropy(), dtype=int)
         self.smoothed = set()  # Track smoothed cells
         self._smooth_change: bool = False  # Trace if we've changed anything through a pass of the grid
-        self.biomes.compile_iwieghts()
 
     def calculate_initial_entropy(self) -> int:
         return len(self.biomes.biomes)
 
     def collapse_least_entropy_cell(self):
-        y, x = self.find_least_entropy_cell_random()
+        if self.USE_RANDOM:
+            y, x = self.find_least_entropy_cell_random()
+        else:
+            y, x = self.find_least_entropy_cell_first()
         if x is not None and y is not None:
             self.collapse_cell(x, y)
 
     def find_least_entropy_cell_first(self) -> Tuple[Optional[int], Optional[int]]:
-        mask = self.grid == None
-        entropy_values = np.where(mask, self.entropy_grid, np.inf)
-        flat_index = np.argmin(entropy_values)
-        min_entropy_index = np.unravel_index(flat_index, entropy_values.shape)
-        if entropy_values[min_entropy_index] == np.inf:
+        flat_index = np.argmin(self.entropy_grid)
+        min_entropy_index = np.unravel_index(flat_index, self.entropy_grid.shape)
+        # Check if the minimum value is LARGE_INT, which means there are no valid cells left
+        if self.entropy_grid[min_entropy_index] == self.LARGE_INT:
             return None, None
         return min_entropy_index
+    
+    def find_first_min_location(array):
+        it = np.nditer(array, flags=['multi_index'])
+        min_value = next(it)
+        min_location = it.multi_index
+        for value in it:
+            if value < min_value:
+                min_value = value
+                min_location = it.multi_index
+        return min_location
 
     def find_least_entropy_cell_random(self) -> Tuple[Optional[int], Optional[int]]:
-        mask = self.grid == None        
-        entropy_values = np.where(mask, self.entropy_grid, np.inf)        
-        min_entropy = np.min(entropy_values)
-        if min_entropy == np.inf:
+        min_entropy = np.min(self.entropy_grid)
+        if min_entropy == self.LARGE_INT:
             return None, None        
-        min_entropy_indices = np.argwhere(entropy_values == min_entropy)
+        min_entropy_indices = np.argwhere(self.entropy_grid == min_entropy)
         chosen_index = random.choice(min_entropy_indices)        
         return tuple(chosen_index)
 
@@ -65,8 +77,14 @@ class Grid:
                 chosen_object = random.choices(self.biomes.biomes, weights=weights)[0]
             except ValueError:
                 raise ImpossibleWorld(f"Cannot resolve world, stopping at {x},{y}", self.get_neighbors(x, y))
-            self.grid[y, x] = chosen_object
-            self.update_neighbors_entropy(x, y, chosen_object)
+            self.set_cell(x, y, chosen_object)
+
+    def set_cell(self, x: int, y: int, cell: Cell) -> None:
+            self.grid[y, x] = cell
+            # Set entropy to LARGE_INT for the assigned cell
+            self.entropy_grid[y, x] = self.LARGE_INT
+            self.update_neighbors_entropy(x, y)
+            return
 
     def update_neighbors_entropy(self, x: int, y: int):
         for dx in [-1, 0, 1]:
@@ -77,6 +95,7 @@ class Grid:
                 if 0 <= nx < self.width and 0 <= ny < self.height and self.grid[ny, nx] is None:
                     valid_objects = [obj for obj in self.biomes.biomes if self.is_valid_object(nx, ny, obj)]
                     self.entropy_grid[ny, nx] = len(valid_objects)
+                    logger.debug("entropy after update of x %s y%s \n%s", x, y, self.entropy_grid)
 
     def is_valid_object(self, x: int, y: int, obj: Cell) -> bool:
         neighbors = self.get_neighbors(x, y)
@@ -174,9 +193,9 @@ class Grid:
         y = np.random.randint(0 + offset, self.height - offset)
         obj = self.biomes.find_by_id(id)
         for dx in range(-size, size):
-            self.grid[y, x+dx] = obj
+            self.set_cell(x+dx, y, obj)
         for dy in range(-size, size):
-            self.grid[y+dy, x] = obj
+            self.set_cell(x, y+dy, obj)
 
-    def all_set(self) -> bool:
+    def needs_work(self) -> bool:
         return np.any(self.grid == None)

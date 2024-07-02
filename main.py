@@ -8,13 +8,12 @@ import numpy as np
 import pygame
 
 from mapgen.biomes import Biomes
-from mapgen.lgrid import Grid
 from mapgen.cell import Cell
 from mapgen.exceptions import ImpossibleWorld
+from mapgen.cgrid import Grid
 from UI.pygame_display import PygameDisplay
 
-
-PROFILE = False
+PROFILE = True
 
 # Basic configuration for logging
 logging.basicConfig(
@@ -24,16 +23,25 @@ logging.basicConfig(
 # Creating a logger
 logger = logging.getLogger(__name__)
 
-biomes: Biomes = Biomes()
 lbiomes: Biomes = Biomes()
+tbiomes: Biomes = Biomes()
+rbiomes: Biomes = Biomes()
 
-# Define some grid objects with single character IDs and neighbor weights
+tbiomes.add_biome(Cell(id='g', color=(128, 255, 0),
+                  neighbor_weights={'g': 2, 'f': 0.38}))
+tbiomes.add_biome(Cell(id='f', color=(0, 204, 0),
+                  neighbor_weights={'f': 2, 'g': 0.4, 'F': 0.66}))
+tbiomes.add_biome(Cell(id='F', color=(0, 102, 51),
+                  neighbor_weights={'F': 2, 'f': 0.85}))
+
+
+# Define some grid objects with single character IDs and neighbor weights for first index renders
 lbiomes.add_biome(Cell(id='W', color=(0, 0, 153),
                   neighbor_weights={'W': 1.5, "w": 0.9, 'r': 0.01}))
 lbiomes.add_biome(Cell(id='w', color=(0, 0, 204),
                   neighbor_weights={'w': 1.5, 'W': 0.7, 'g': 0.7, 's': 0.6, 'r': 0.01}))
 lbiomes.add_biome(Cell(id='g', color=(128, 255, 0),
-                  neighbor_weights={'g': 2, 'w': 0.25, 'f': 0.38, 's': 0.35, 'h': 0.5, 'r': 0.01}))
+                  neighbor_weights={'g': 2, 'w': 0.25, 'f': 0.35, 's': 0.35, 'h': 0.5, 'r': 0.01}))
 lbiomes.add_biome(Cell(id='f', color=(0, 204, 0),
                   neighbor_weights={'f': 2, 'g': 0.4, 'F': 0.66, 'r': 0.01}))
 lbiomes.add_biome(Cell(id='F', color=(0, 102, 51),
@@ -52,35 +60,37 @@ lbiomes.add_biome(Cell(id='r', color=(210, 180, 140),
                                     's': 0.1, 'r': 0.01 }))
 
 
-# Define some grid objects with single character IDs and neighbor weights
-biomes.add_biome(Cell(id='W', color=(0, 0, 153),
+# Define some cell types for random index renders
+rbiomes.add_biome(Cell(id='W', color=(0, 0, 153),
                   neighbor_weights={'W': 1.3, "w": 0.9, 'r': 0.01}))
-biomes.add_biome(Cell(id='w', color=(0, 0, 204),
+rbiomes.add_biome(Cell(id='w', color=(0, 0, 204),
                   neighbor_weights={'w': 1.3, 'W': 0.5, 'g': 0.7, 's': 0.6, 'r': 0.01}))
-biomes.add_biome(Cell(id='g', color=(128, 255, 0),
-                  neighbor_weights={'g': 2.2, 'w': 0.28, 'f': 0.26, 's': 0.25, 'h': 0.42, 'r': 0.01}))
-biomes.add_biome(Cell(id='f', color=(0, 204, 0),
-                  neighbor_weights={'f': 2.25, 'g': 0.34, 'F': 0.6, 'r': 0.01}))
-biomes.add_biome(Cell(id='F', color=(0, 102, 51),
+rbiomes.add_biome(Cell(id='g', color=(128, 255, 0),
+                  neighbor_weights={'g': 2.2, 'w': 0.28, 'f': 0.27, 's': 0.23, 'h': 0.42, 'r': 0.01}))
+rbiomes.add_biome(Cell(id='f', color=(0, 204, 0),
+                  neighbor_weights={'f': 2.25, 'g': 0.34, 'F': 0.63, 'r': 0.01}))
+rbiomes.add_biome(Cell(id='F', color=(0, 102, 51),
                   neighbor_weights={'F': 1.65, 'f': 0.9, 'r': 0.01}))
-biomes.add_biome(Cell(id='h', color=(102, 51, 0),
+rbiomes.add_biome(Cell(id='h', color=(102, 51, 0),
                   neighbor_weights={'h': 2, 'g': 0.63, 'm': 0.66, 'r': 0.01}))
-biomes.add_biome(Cell(id='m', color=(128, 128, 128),
+rbiomes.add_biome(Cell(id='m', color=(128, 128, 128),
                   neighbor_weights={'m': 2, 'M': 0.75, 'h': 0.8, 'r': 0.01}))
-biomes.add_biome(Cell(id='M', color=(192, 192, 192),
+rbiomes.add_biome(Cell(id='M', color=(192, 192, 192),
                   neighbor_weights={'M': 1.5, 'm': 1.0, 'r': 0.01}))
-biomes.add_biome(Cell(id='s', color=(153, 153, 0),
-                  neighbor_weights={'s': 2, 'w': 0.6, 'g': 0.8, 'r': 0.01}))
-biomes.add_biome(Cell(id='r', color=(210, 180, 140),
+rbiomes.add_biome(Cell(id='s', color=(153, 153, 0),
+                  neighbor_weights={'s': 2, 'w': 0.6, 'g': 0.76, 'r': 0.01}))
+rbiomes.add_biome(Cell(id='r', color=(210, 180, 140),
                   neighbor_weights={'r': 0.001, 'W': 0.1, 'w': 0.1, 'g': 0.1, 
                                     'f': 0.1, 'F': 0.1, 'h': 0.1, 'm': 0.1, 'M': 0.1, 
                                     's': 0.1, 'r': 0.01 }))
+
+biomes: Biomes = rbiomes
 
 # Initialize Pygame
 pygame.init()
 
 # Screen dimensions and colors
-CELL_SIZE = 8
+CELL_SIZE = 7
 SCREEN_WIDTH = 1200
 SCREEN_HEIGHT = 600
 BLACK = (0, 0, 0)
@@ -94,7 +104,7 @@ CONNECTOR_ID = 'r'
 def run_wfc_and_display(grid: Grid) -> bool:
     try:
         count = 0
-        while not grid.all_set():
+        while grid.needs_work():
             grid.collapse_least_entropy_cell()
             count += 1
             if count // 50 == count / 50:
@@ -135,19 +145,10 @@ def init_grid() -> Grid:
     grid_height = int(SCREEN_HEIGHT / CELL_SIZE)
     grid = Grid(width=grid_width, height=grid_height, biomes=biomes)
     grid.connector_name = CONNECTOR_ID
-    '''
-    grid.add_random('s', 5)
     grid.add_random('s', 5)
     grid.add_random('W', 5)
-    grid.add_random('W', 3)
-    grid.add_random('W', 3)
-    grid.add_random('M', 3)
-    grid.add_random('M', 3)
     grid.add_random('M', 5)
-    grid.add_random('F', 4)
-    grid.add_random('F', 4)
     grid.add_random('F', 5)
-    '''
     return grid
 
 def main():
