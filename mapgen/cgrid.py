@@ -1,7 +1,7 @@
 import random
 from collections import Counter, deque
 from dataclasses import dataclass, field
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Set
 
 from .biomes import Biomes
 from .cell import Cell
@@ -15,6 +15,7 @@ class Grid:
     biomes: Biomes
     grid: List[List[Optional[Cell]]] = field(init=False)
     entropy_grid: List[List[int]] = field(init=False)
+    potential_states: List[List[Set[str]]] = field(init=False)
     smooth_point: Tuple[int, int] = (0, 0)
     
     connector_name: str = None
@@ -24,6 +25,7 @@ class Grid:
         self.grid = [[None for _ in range(self.width)] for _ in range(self.height)]
         initial_entropy = self.calculate_initial_entropy()
         self.entropy_grid = [[initial_entropy for _ in range(self.width)] for _ in range(self.height)]
+        self.potential_states = [[set(biome.id for biome in self.biomes.biomes) for _ in range(self.width)] for _ in range(self.height)]
         self.smoothed = set()  # Track smoothed cells
         self._smooth_change: bool = False  # Trace if we've changed anything through a pass of the grid
 
@@ -74,15 +76,19 @@ class Grid:
     
     def collapse_cell(self, x: int, y: int):
         if self.grid[y][x] is None:  # Note: numpy uses (row, col), i.e., (y, x)
-            weights = [self.calculate_weight(x, y, obj) for obj in self.biomes.biomes]
+            possible_states = list(self.potential_states[y][x])
+            weights = [self.calculate_weight(x, y, self.biomes.find_by_id(state)) for state in possible_states]
             try:
-                chosen_object = random.choices(self.biomes.biomes, weights=weights)[0]
+                chosen_state = random.choices(possible_states, weights=weights)[0]
+                chosen_object = self.biomes.find_by_id(chosen_state)
             except ValueError:
                 raise ImpossibleWorld(f"Cannot resolve world, stopping at {x},{y}", self.get_neighbors(x, y))
             self.set_cell(x, y, chosen_object)
             
     def set_cell(self, x: int, y: int, cell: Cell):
         self.grid[y][x] = cell
+        self.potential_states[y][x] = {cell.id}
+        self.entropy_grid[y][x] = 0
         self.propagate_entropy(x, y)
 
     def propagate_entropy(self, x: int, y: int):
@@ -96,18 +102,18 @@ class Grid:
                         continue
                     nx, ny = cx + dx, cy + dy
                     if 0 <= nx < self.width and 0 <= ny < self.height and self.grid[ny][nx] is None:
-                        valid_objects = [obj for obj in self.biomes.biomes if self.is_valid_object(nx, ny, obj)]
-                        new_entropy = len(valid_objects)
-                        if new_entropy < self.entropy_grid[ny][nx]:
-                            self.entropy_grid[ny][nx] = new_entropy
+                        old_potential_states = self.potential_states[ny][nx]
+                        new_potential_states = set(obj.id for obj in self.biomes.biomes if self.is_valid_object(nx, ny, obj))
+                        if new_potential_states != old_potential_states:
+                            self.potential_states[ny][nx] = new_potential_states
+                            self.entropy_grid[ny][nx] = len(new_potential_states)
                             queue.append((nx, ny))
 
     def is_valid_object(self, x: int, y: int, obj: Cell) -> bool:
         neighbors = self.get_neighbors(x, y)
         for neighbor in neighbors:
-            if neighbor:
-                if obj.id not in neighbor.neighbor_weights or neighbor.id not in obj.neighbor_weights:
-                    return False
+            if neighbor and (obj.id not in neighbor.allowed_neighbors() or neighbor.id not in obj.allowed_neighbors()):
+                return False
         return True
 
     def get_neighbors(self, x: int, y: int) -> List[Optional[Cell]]:
@@ -129,7 +135,6 @@ class Grid:
                 weight *= neighbor.neighbor_weights.get(obj.id, 0)
         return weight
     
-
     def smooth(self) -> bool:
         remove_id = None
         if self.connector_name:
