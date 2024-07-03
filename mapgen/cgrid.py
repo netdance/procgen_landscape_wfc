@@ -20,7 +20,7 @@ class Grid:
     smooth_point: Tuple[int, int] = (0, 0)
     
     connector_name: str = None
-    USE_RANDOM = False
+    USE_RANDOM = True
 
     # Creating a logger
     logger = logging.getLogger("CGrid")
