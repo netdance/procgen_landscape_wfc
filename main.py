@@ -84,13 +84,13 @@ rbiomes.add_biome(Cell(id='r', color=(210, 180, 140),
                                     'f': 0.1, 'F': 0.1, 'h': 0.1, 'm': 0.1, 'M': 0.1, 
                                     's': 0.1, 'r': 0.01 }))
 
-biomes: Biomes = rbiomes
+biomes: Biomes = lbiomes
 
 # Initialize Pygame
 pygame.init()
 
 # Screen dimensions and colors
-CELL_SIZE = 8
+CELL_SIZE = 20
 SCREEN_WIDTH = 1200
 SCREEN_HEIGHT = 600
 BLACK = (0, 0, 0)
@@ -145,6 +145,7 @@ def init_grid() -> Grid:
     grid_height = int(SCREEN_HEIGHT / CELL_SIZE)
     grid = Grid(width=grid_width, height=grid_height, biomes=biomes)
     grid.connector_name = CONNECTOR_ID
+    '''  
     grid.add_random('F', 5)
     grid.add_random('s', 5)
     grid.add_random('W', 5)
@@ -152,6 +153,7 @@ def init_grid() -> Grid:
     grid.add_random('M', 4)
     grid.add_random('M', 5)
     grid.add_random('F', 5)
+    '''
     return grid
 
 def main():

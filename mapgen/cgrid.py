@@ -2,6 +2,7 @@ import random
 from collections import Counter, deque
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple, Set
+import logging
 
 from .biomes import Biomes
 from .cell import Cell
@@ -19,7 +20,10 @@ class Grid:
     smooth_point: Tuple[int, int] = (0, 0)
     
     connector_name: str = None
-    USE_RANDOM = True
+    USE_RANDOM = False
+
+    # Creating a logger
+    logger = logging.getLogger("CGrid")
 
     def __post_init__(self):
         self.grid = [[None for _ in range(self.width)] for _ in range(self.height)]
@@ -96,6 +100,7 @@ class Grid:
 
         while queue:
             cx, cy = queue.popleft()
+            self.logger.debug("deque cx %s cy %s", cx, cy)
             for dx in [-1, 0, 1]:
                 for dy in [-1, 0, 1]:
                     if dx == 0 and dy == 0:
@@ -105,6 +110,7 @@ class Grid:
                         old_potential_states = self.potential_states[ny][nx]
                         new_potential_states = set(obj.id for obj in self.biomes.biomes if self.is_valid_object(nx, ny, obj))
                         if new_potential_states != old_potential_states:
+                            self.logger.debug("nx %s ny %s, new potential states %s", nx, ny, len(new_potential_states))
                             self.potential_states[ny][nx] = new_potential_states
                             self.entropy_grid[ny][nx] = len(new_potential_states)
                             queue.append((nx, ny))
