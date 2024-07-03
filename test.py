@@ -9,14 +9,14 @@ int_time = time.time() - start_time
 
 # Comparing single-character strings
 start_time = time.time()
-for i in range(1000000):
+for i in range(100_000_000):
     if 'a' == 'a':
         pass
 str_time = time.time() - start_time
 
 # Comparing integers
 start_time = time.time()
-for i in range(1000000):
+for i in range(100_000_000):
     if 1 == 1:
         pass
 int_time = time.time() - start_time
